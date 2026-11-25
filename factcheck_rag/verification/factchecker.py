@@ -7,7 +7,7 @@ repair loop in Phase 3 treats it like any other unsupported claim when it
 fails).
 """
 import time
-from decomposer import ClaimDecomposer
+from factcheck_rag.verification.decomposer import ClaimDecomposer
 
 
 class ClaimChecker:

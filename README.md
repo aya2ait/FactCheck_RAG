@@ -56,6 +56,34 @@ Question
 
 ---
 
+## Project Structure
+
+```
+FactCheck_RAG/
+├── factcheck_rag/              # the code (Python package)
+│   ├── config.py               # all settings
+│   ├── pipeline.py             # standard RAG: retriever + generator         (Phase 1)
+│   ├── retrieval/              # indexer.py, retriever.py                    (Phase 1)
+│   ├── generation/             # generator.py                                (Phase 1)
+│   └── verification/           # decomposer.py, verifier.py, factchecker.py  (Phase 2)
+├── scripts/                    # what you run: build_index, run_baseline, run_verify
+├── tests/                      # unit tests, no GPU needed
+├── notebooks/
+│   └── colab_runner.ipynb      # runs everything on Colab
+├── requirements.txt
+└── README.md
+```
+
+`data/` (index) and `outputs/` (results) are created when you run the
+scripts and are not in git. A new folder is added to `factcheck_rag/` when
+its phase starts (e.g. `repair/` for Phase 3).
+
+Run the unit tests (no GPU needed): `python tests/test_text_parsing.py`
+
+**On Colab:** open `notebooks/colab_runner.ipynb` (*File → Upload notebook* or *Open from GitHub*). It clones this repo, links `data/` and `outputs/` to `MyDrive/factcheck_rag/` so the index and results persist, and runs every step.
+
+---
+
 ## Phase 1 — Baseline RAG ✅
 
 ### Goal
@@ -64,16 +92,8 @@ before adding any verification or repair logic.
 
 ### What was built
 
-```
-factcheck_rag/
-├── config.py        # all settings in one place
-├── indexer.py       # download Wikipedia, embed, build FAISS index
-├── retriever.py     # query FAISS, return top-k passages
-├── generator.py     # Qwen2.5-7B-Instruct, citation-aware prompt
-├── pipeline.py      # retriever + generator wired together
-├── run_baseline.py  # run on 200 ASQA questions, save results
-└── requirements.txt # all dependencies
-```
+`factcheck_rag/retrieval/`, `factcheck_rag/generation/`,
+`factcheck_rag/pipeline.py`, `scripts/build_index.py`, `scripts/run_baseline.py`.
 
 ### How Phase 1 works step by step
 
@@ -152,19 +172,19 @@ Top passage: Apollo 11 (Wikipedia)
 pip install -r requirements.txt
 
 # 2. build the FAISS index (runs once, ~25 min; cached steps are skipped)
-python indexer.py --no-embed   # optional: download on a CPU runtime
-python indexer.py              # GPU runtime: embedding + FAISS
+python scripts/build_index.py --no-embed   # optional: download on a CPU runtime
+python scripts/build_index.py              # GPU runtime: embedding + FAISS
 
-# 3. test one question
+# 3. test one question (from the repo root)
 python -c "
-from pipeline import RAGPipeline
+from factcheck_rag.pipeline import RAGPipeline
 rag = RAGPipeline()
 result = rag.run('Who was the first person to walk on the moon?')
 print(result['answer'])
 "
 
 # 4. run on 200 ASQA questions
-python run_baseline.py
+python scripts/run_baseline.py
 ```
 
 ---
@@ -174,10 +194,11 @@ python run_baseline.py
 ### What was built
 
 ```
+factcheck_rag/verification/
 ├── decomposer.py    # answer -> sentences (with their [n] tags) -> atomic claims
 ├── verifier.py      # NLIVerifier (DeBERTa-v3) and LLMJudgeVerifier, same interface
-├── factchecker.py   # ClaimChecker: decompose + verify, claim precision
-└── run_verify.py    # verify the baseline answers, report Claim P
+└── factchecker.py   # ClaimChecker: decompose + verify, claim precision
+scripts/run_verify.py  # verify the baseline answers, report Claim P
 ```
 
 `generator.py` now exposes `chat(system, user)`, so the decomposer and the
@@ -226,9 +247,9 @@ The two verifiers agree on 14 of 15 claims. Lessons from the iterations:
 ### How to run
 
 ```bash
-python run_baseline.py                 # -> outputs/baseline.jsonl
-python run_verify.py --verifier nli    # -> outputs/verified_nli.jsonl
-python run_verify.py --verifier judge  # -> outputs/verified_judge.jsonl
+python scripts/run_baseline.py                 # -> outputs/baseline.jsonl
+python scripts/run_verify.py --verifier nli    # -> outputs/verified_nli.jsonl
+python scripts/run_verify.py --verifier judge  # -> outputs/verified_judge.jsonl
 ```
 
 ---

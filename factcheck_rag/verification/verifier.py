@@ -13,7 +13,7 @@ factchecker.py for how evidence is chosen).
 """
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-import config
+from factcheck_rag import config
 
 
 def _passage_text(p: dict) -> str:

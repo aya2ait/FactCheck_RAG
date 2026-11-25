@@ -11,14 +11,14 @@ Steps (each one is cached, so a crash does not restart from zero):
     3. chunk into CHUNK_WORDS-word passages   -> data/passages.jsonl
     4. embed with bge-large + FAISS           -> data/faiss.index
 
-    python indexer.py --no-embed   # CPU runtime: steps 1-3 only
-    python indexer.py              # GPU runtime: everything (cached steps are skipped)
+    python scripts/build_index.py --no-embed   # CPU runtime: steps 1-3 only
+    python scripts/build_index.py              # GPU runtime: everything (cached steps are skipped)
 """
 import json, os, time
 from urllib.parse import unquote
 import requests
 from tqdm import tqdm
-import config
+from factcheck_rag import config
 
 _API = "https://en.wikipedia.org/w/api.php"
 _HEADERS = {"User-Agent": "FactCheckRAG-course-project/0.1 (academic, non-commercial)"}
@@ -96,7 +96,7 @@ def _get(params: dict) -> dict:
             print(f"  retry after error: {e}")
             time.sleep(wait)
             wait = min(wait * 2, 120)
-    raise RuntimeError("Wikipedia API keeps failing; re-run indexer.py later")
+    raise RuntimeError("Wikipedia API keeps failing; re-run scripts/build_index.py later")
 
 
 def fetch_batch(titles: list) -> dict:
@@ -227,16 +227,11 @@ def build_index(embed: bool = True):
     print(f"4/4 Embedding with {config.EMBED_MODEL} ...")
     if not embed:
         print("Stopping before embedding (--no-embed). Switch to a GPU runtime "
-              "and run: python indexer.py")
+              "and run: python scripts/build_index.py")
         return
     import torch
     if not torch.cuda.is_available():
         raise SystemExit("No GPU: embedding on CPU would take hours. Switch the "
-                         "runtime to T4 GPU and run python indexer.py again "
+                         "runtime to T4 GPU and run python scripts/build_index.py again "
                          "(downloaded pages are cached).")
     embed_and_index(passages)
-
-
-if __name__ == "__main__":
-    import sys
-    build_index(embed="--no-embed" not in sys.argv)

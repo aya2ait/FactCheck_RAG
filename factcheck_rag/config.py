@@ -1,8 +1,12 @@
+"""All settings in one place. Paths are relative to the repository root,
+so scripts work from any working directory (Colab, Kaggle, local)."""
+import os
 
-DATA_DIR        = "data"
-INDEX_PATH      = "data/faiss.index"
-PASSAGES_PATH   = "data/passages.jsonl"
-RESULTS_DIR     = "outputs"
+ROOT_DIR        = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR        = os.path.join(ROOT_DIR, "data")
+INDEX_PATH      = os.path.join(DATA_DIR, "faiss.index")
+PASSAGES_PATH   = os.path.join(DATA_DIR, "passages.jsonl")
+RESULTS_DIR     = os.path.join(ROOT_DIR, "outputs")
 
 EMBED_MODEL     = "BAAI/bge-large-en-v1.5"
 EMBED_BATCH     = 256

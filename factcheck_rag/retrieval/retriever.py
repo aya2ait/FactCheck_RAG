@@ -3,7 +3,7 @@ import json
 import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
-import config
+from factcheck_rag import config
 
 class Retriever:
     def __init__(self):

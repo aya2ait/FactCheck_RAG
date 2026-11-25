@@ -1,7 +1,7 @@
 
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
-import config
+from factcheck_rag import config
 
 # ALCE instruction (Gao et al., 2023), so our baseline matches the protocol
 _SYSTEM = (

@@ -3,14 +3,15 @@
 Resumable: questions already in the output file are skipped, so a Colab
 disconnect does not lose work.
 
-    python run_baseline.py                # 200 questions
-    python run_baseline.py --limit 5      # quick test
+    python scripts/run_baseline.py                # 200 questions
+    python scripts/run_baseline.py --limit 5      # quick test
 """
-import argparse, json, os
+import argparse, json, os, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # repo root
 from datasets import load_dataset
 from tqdm import tqdm
-from pipeline import RAGPipeline
-import config
+from factcheck_rag.pipeline import RAGPipeline
+from factcheck_rag import config
 
 
 def load_asqa(n: int):

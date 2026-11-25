@@ -1,18 +1,19 @@
 """Phase 2: decompose + verify the answers produced by run_baseline.py.
 
-    python run_verify.py --verifier nli
-    python run_verify.py --verifier judge --limit 20
+    python scripts/run_verify.py --verifier nli
+    python scripts/run_verify.py --verifier judge --limit 20
 
 Writes outputs/verified_<verifier>.jsonl (resumable) and prints the mean
 claim precision, i.e. the "Claim P" of standard RAG in the results table.
 """
-import argparse, json, os
+import argparse, json, os, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # repo root
 from statistics import mean
 from tqdm import tqdm
-from generator import Generator
-from verifier import build_verifier
-from factchecker import ClaimChecker
-import config
+from factcheck_rag.generation.generator import Generator
+from factcheck_rag.verification.verifier import build_verifier
+from factcheck_rag.verification.factchecker import ClaimChecker
+from factcheck_rag import config
 
 
 def main():

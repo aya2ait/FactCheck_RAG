@@ -14,7 +14,7 @@ Claim dict:
       "citations":    [1],        # 1-based passage numbers, as in the prompt
     }\n"""
 import re
-import config
+from factcheck_rag import config
 
 _CITE_RE      = re.compile(r"\[(\d+)\]")
 _SENT_SPLIT   = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9\"'(\[])")
