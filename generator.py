@@ -3,12 +3,17 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 import config
 
+# ALCE instruction (Gao et al., 2023), so our baseline matches the protocol
 _SYSTEM = (
-    "You are a factual question-answering assistant. "
-    "Answer using ONLY the passages provided. "
-    "After each factual claim add a citation tag [1], [2], ... "
-    "referring to the passage number. "
-    "If passages lack information, say so explicitly."
+    "Write an accurate, engaging, and concise answer for the given question "
+    "using only the provided search results (some of which might be "
+    "irrelevant) and cite them properly. Use an unbiased and journalistic "
+    "tone. Always cite for any factual claim. When citing several search "
+    "results, use [1][2][3]. Cite at least one document and at most three "
+    "documents in each sentence, placing the citations at the end of that "
+    "sentence. Never list citations separately at the end of the answer. "
+    "If the question is ambiguous, cover each plausible interpretation. "
+    "If the search results do not contain the answer, say so in one sentence."
 )
 
 def _build_prompt(question, passages):
@@ -19,10 +24,13 @@ def _build_prompt(question, passages):
     return (
         f"Passages:\n{block}\n\n"
         f"Question: {question}\n\n"
-        f"Answer (with inline citations):"
+        f"Answer:"
     )
 
 class Generator:
+    """Wraps the LLM. `chat` is shared by the answer generator, the claim
+    decomposer and the LLM judge, so the 7B model is loaded only once."""
+
     def __init__(self):
         print(f"Loading {config.GEN_MODEL} ...")
         bnb = BitsAndBytesConfig(
@@ -38,26 +46,30 @@ class Generator:
         )
         print("Generator ready.")
 
-    def generate(self, question: str, passages: list) -> str:
+    def chat(self, system: str, user: str,
+             max_new_tokens: int = config.MAX_NEW_TOKENS) -> str:
         messages = [
-            {"role": "system", "content": _SYSTEM},
-            {"role": "user",   "content": _build_prompt(question, passages)},
+            {"role": "system", "content": system},
+            {"role": "user",   "content": user},
         ]
         text = self._tokenizer.apply_chat_template(
             messages,
             tokenize=False,
             add_generation_prompt=True
         )
-        inputs = self._tokenizer(text, return_tensors="pt").to("cuda")
+        inputs = self._tokenizer(text, return_tensors="pt").to(self._model.device)
         with torch.no_grad():
             outputs = self._model.generate(
                 **inputs,
-                max_new_tokens=config.MAX_NEW_TOKENS,
-                temperature=config.TEMPERATURE,
-                do_sample=False,
+                max_new_tokens=max_new_tokens,
+                do_sample=False,          # greedy = deterministic
+                pad_token_id=self._tokenizer.eos_token_id,
             )
         decoded = self._tokenizer.decode(
             outputs[0][inputs["input_ids"].shape[1]:],
             skip_special_tokens=True
         )
         return decoded.strip()
+
+    def generate(self, question: str, passages: list) -> str:
+        return self.chat(_SYSTEM, _build_prompt(question, passages))

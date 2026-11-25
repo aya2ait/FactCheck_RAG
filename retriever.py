@@ -17,7 +17,7 @@ class Retriever:
 
     def retrieve(self, query: str, top_k: int = config.TOP_K) -> list:
         vec = self._model.encode(
-            [query],
+            [config.QUERY_PREFIX + query],
             normalize_embeddings=True,
             show_progress_bar=False
         ).astype("float32")
